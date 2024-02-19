@@ -1,5 +1,5 @@
 from flask_login import LoginManager, login_user
-from flask import request, redirect
+from flask import request, redirect, abort
 
 from oauthlib.oauth2 import WebApplicationClient
 from functools import partial
@@ -11,10 +11,11 @@ from .exceptions import *
 
 class Authenticator(LoginManager):
 	"""docstring for Authenticator"""
-	def __init__(self, loader, postload=None, login_view="login", **kwargs):
+	def __init__(self, loader=None, postload=None, login_view="login", **kwargs):
 		super(Authenticator, self).__init__(**kwargs)
 		self.login_view = login_view
-		self.setLoader(loader)
+		if loader is not None:
+			self.setLoader(loader)
 		self.postload = None;
 		if postload is not None:
 			self.setPostLoader(postload)
@@ -43,6 +44,30 @@ class Authenticator(LoginManager):
 			raise MalformedAuthenticatorError("The user post loader must be a callable object.")
 		self.postload = post_loader
 
+
+
+class AuthorizationBearerAuthenticator(Authenticator):
+	"""docstring for AuthorizationBearerAuthenticator"""
+
+	def login_user(self,user):
+		return self.loader.generate_token(user)
+
+	def setLoader(self,loader):
+		def load(request):
+			auth_header = [v for k,v in request.headers.items() if k == "Authorization"]
+			if len(auth_header) != 1 or not('Bearer ' in auth_header[0]):
+				return None
+			token = auth_header[0].split('Bearer ')[1]
+			loaded_user = self.loader.load_user_by_token(token)
+			print("lodedd",loaded_user)
+			if loaded_user is None or self.postload is None:
+				return loaded_user
+			return self.postload(loaded_user)
+
+		self.loader = loader
+		self._request_callback = load
+		self.unauthorized_callback = lambda :abort(403)
+		
 
 
 class OAuth2WebAuthenticator(Authenticator):
@@ -137,9 +162,4 @@ class OAuth2WebAuthenticator(Authenticator):
 			app.route(f"{route['callback']}")(
 				self.create_callback_endpoint(route['name'],route['callback'],loader=route.get('user_loader',None))
 			)
-
-
-
-		
-
-		
+			
