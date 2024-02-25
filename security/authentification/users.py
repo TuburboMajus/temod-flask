@@ -48,7 +48,6 @@ class TemodUserHandler(object):
 	def load_user_by_token(self,token):
 		dct = {self.token_attr:token}
 		user = self.database(self.user_class,**self.db_credentials).get(**dct)
-		print(user)
 		if user is not None:
 			if user[self.token_expiration_attr] is None or user[self.token_expiration_attr] > datetime.now():
 				user[self.is_authenticated_attr] = True

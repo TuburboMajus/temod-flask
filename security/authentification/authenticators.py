@@ -25,7 +25,6 @@ class Authenticator(LoginManager):
 
 	def login_user(self,user):
 		self.loader.login_user(user)
-		print(user)
 		return login_user(user)
 
 	def setLoader(self,loader):
@@ -59,7 +58,6 @@ class AuthorizationBearerAuthenticator(Authenticator):
 				return None
 			token = auth_header[0].split('Bearer ')[1]
 			loaded_user = self.loader.load_user_by_token(token)
-			print("lodedd",loaded_user)
 			if loaded_user is None or self.postload is None:
 				return loaded_user
 			return self.postload(loaded_user)
