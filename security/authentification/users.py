@@ -76,6 +76,12 @@ class TemodUserHandler(object):
 		temod_user[self.is_active_attr] = True
 		return self.database(self.user_class,**self.db_credentials).updateOnSnapshot(temod_user.user)
 
+	def logout_user(self,temod_user):
+		temod_user.user.takeSnapshot()
+		temod_user[self.is_authenticated_attr] = False
+		temod_user[self.is_active_attr] = False
+		return self.database(self.user_class,**self.db_credentials).updateOnSnapshot(temod_user.user)
+
 	def generate_token(self,temod_user):
 		temod_user.user.takeSnapshot()
 		generated = self.token_generator()

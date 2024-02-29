@@ -1,4 +1,4 @@
-from flask_login import LoginManager, login_user
+from flask_login import LoginManager, login_user, logout_user
 from flask import request, redirect, abort
 
 from oauthlib.oauth2 import WebApplicationClient
@@ -26,6 +26,10 @@ class Authenticator(LoginManager):
 	def login_user(self,user):
 		self.loader.login_user(user)
 		return login_user(user)
+
+	def logout_user(self,user):
+		self.loader.logout_user(user)
+		return logout_user()
 
 	def setLoader(self,loader):
 		self.loader = loader
