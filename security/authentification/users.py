@@ -112,6 +112,10 @@ class TemodUser(object):
 	def get_id(self):
 		return self.user[self.identifier]
 
+	@property
+	def is_anonymous(self):
+		return self.user is None
+
 	def __getitem__(self,name):
 		return self.user[name]
 

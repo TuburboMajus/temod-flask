@@ -20,6 +20,9 @@ class Authenticator(LoginManager):
 		if postload is not None:
 			self.setPostLoader(postload)
 
+	def load_user(self,identifier):
+		return self.loader.load_user(identifier)
+
 	def search_user(self,*logins):
 		return self.loader.search_user(*logins)
 
