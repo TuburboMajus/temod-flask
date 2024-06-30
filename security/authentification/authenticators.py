@@ -26,9 +26,9 @@ class Authenticator(LoginManager):
 	def search_user(self,*logins):
 		return self.loader.search_user(*logins)
 
-	def login_user(self,user):
+	def login_user(self,user, **kwargs):
 		self.loader.login_user(user)
-		return login_user(user)
+		return login_user(user, **kwargs)
 
 	def logout_user(self,user):
 		self.loader.logout_user(user)

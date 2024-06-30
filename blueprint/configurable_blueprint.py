@@ -116,9 +116,25 @@ class MultiLanguageBlueprint(Blueprint):
 				return languages[lg]
 			raise LanguageNotFound("The default language was not properly set")
 
-
-	def get_dictionnary(self):
+	def get_dictionnary(self, return_dictionnary_only=True):
 		language = self.get_language()
-		return self.get_configuration(MultiLanguageBlueprint.DICTIONNARY_KEY).get(
+		dictionnary = self.get_configuration(MultiLanguageBlueprint.DICTIONNARY_KEY).get(
 			self.dictionnary_selector(language)
 		)
+		if return_dictionnary_only:
+			return dictionnary
+		return language, dictionnary
+
+	def with_language(self, f):
+		def __load_language(*args, **kwargs):
+			return f(self.get_language(),*args, **kwargs)
+
+		__load_language.__name__ = f.__name__
+		return __load_language
+
+	def with_dictionnary(self, f):
+		def __load_dictionnary(*args, **kwargs):
+			return f(*self.get_dictionnary(return_dictionnary_only=False),*args, **kwargs)
+
+		__load_dictionnary.__name__ = f.__name__
+		return __load_dictionnary

@@ -73,6 +73,11 @@ app.config['LANGUAGES'] = {
 - **get_language(self)**: Returns the representative of the language with the same order of selection as the previous method. If the app's or the blueprint's configurations have no config name *'LANGUAGES'* (or whatever you set the constant *LANGUAGES_KEY* to) this function will return the string representative of the language. This method does fire the *on_language_change*
 - **get_dictionnary(self)**: Returns the dictionnary correspondant to the language returned by the method *get_language*
 
+### Decorators
+
+- **with_language** : Can be used to decorate a flask endpoint an loads automatically the language of the current caller using *get_language*. 
+- **with_dictionnary** : Can be used to decorate a flask endpoint an loads automatically the language and the correspondant dictionnary of the current caller using *get_dictionnary*. 
+
 ### Example Of Usage:
 
 index.html
@@ -140,4 +145,13 @@ After registering this blueprint to your app and running it (let say on http://1
 </html>
 ```
 This last call will not change back to english since the chosen language for your session has been set to "fr" on the previous one 
+
+
+Using decorators: The same result can be achieved if the *home* route was defined as follows:
+```python
+@blueprint.route('/home')
+@with_dictionnary
+def home(language, dictionnary):
+	return render_tempalte("index.html",dictionnary=dictionnary, language=language)
+```
 

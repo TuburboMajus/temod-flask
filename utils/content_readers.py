@@ -20,7 +20,7 @@ def body_content(content,*dargs,strict=False,on_error=None,objectifier=None,**dk
 					on_error()
 				elif request.form is not None:
 					data = dict(request.form)
-			return endpoint(objectifier(data,*args,**kwargs),*args,**kwargs)
+			return endpoint(objectifier(data,*dargs,**dkwargs),*args,**kwargs)
 
 		__verification.__name__ = endpoint.__name__
 		return __verification
