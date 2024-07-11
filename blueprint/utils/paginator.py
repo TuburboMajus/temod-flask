@@ -87,6 +87,16 @@ class Paginator(object):
         self.filter = function
         return self
 
+    def orderby(self, order):
+        """
+        Set the order of the paginated elements.
+
+        :param function: The order string.
+        :return: Self for method chaining.
+        """
+        self.order = order
+        return self
+
     def paginate(self, f):
         """
         Decorator to paginate the results of a function.

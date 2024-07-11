@@ -1,5 +1,15 @@
 # Change Log
 
+## Version 2.1.2
+
+### Additions
+
+- Added method orderby to Paginator to set the order paginated elements should be gathered in
+
+### Authors
+
+- PyAxolotl
+
 ## Version 2.1.1
 
 ### Additions
