@@ -1,157 +1,128 @@
-# Temod Configurable Blueprints Documentation
+# Temod's Blueprints
 
-Temod's configurable blueprints are introduced to induce more flexibility to Flask's blueprint and allow them to be
-easier to transport from one project to another just by tuning the blueprint's configuration without changing the code in 
-itself
+The `MultiLanguageBlueprint` class extends Flask's `Blueprint` to add multi-language support for your application. This class, along with the `Blueprint` class it extends, allows you to manage configurations and handle multiple languages seamlessly.
 
-## Blueprint
+## Usage
 
-The basic configurable blueprint inherits from Flask's Blueprint object.
+### Blueprint Class
 
-### Constructor
+The `Blueprint` class provides a base for handling configurations in your Flask blueprints.
 
-*__init__(self, &ast;args, default_config=None, &ast;&ast;kwargs)* : &ast;args and &ast;&ast;kwargs will be passed to the parent class flask.Blueprint
-
-### Attributes
-
-- **default_configuration**: A dictionnary containing the default configuration for the blueprint. Can be defined using the default_config argument in the *Blueprint* constructor or using the method *default_config(self, configuration)*
-- **configuration**: A dictionnary representing the actual configuration of the Blueprint
-
-### Methods
-
-- **default_config(self, configuration)**: Sets the attribute *default_configuration* to *configuration*
-- **setup(self, configuration)**: updates the *default_configuration* dictionnary with the values in *configuration*
-- **get_configuration(self, config, &ast;args, fetch_from_app=True)**: gets the value represented by *config* from the blueprints config. If it fails to do so and *fetch_from_app* is set to *True*, the method attempts to fetch the configuration from the object *current_app.config*. If both previous attempt fail and *args* is not empty, the first value of *args* will be returned, otherwise a *ConfigNotFound* Exception will be raised.
-
-
-
-## MultiLanguageBlueprint
-
-This blueprint is a subclass of Blueprint and allows the selection of the language and the correspondant dictionnary on user request and session. Languages can be either string values ("en", "fr", "ar", ... ) or Objects. The dictionnary is a mapping of strings with the following format:
-
-```json
-{
-	"en": { dictionnary relative to the english language },
-	"fr": { dictionnary relative to french },
-	...
-}
-```
-This dictionnary must be included in either the app's configuration (app.config) or in the blueprint's configuration.
-If you're using Objects as representatives for languages, you'll need to store them as well in either the app's configuration or the blueprint's configurations. Example:
+#### Example
 
 ```python
-class Language:
-	def __init__(self, code, name):
-		self.code = code
-		self.name = name
+from temod_flask import Blueprint
 
-# Storing languages in the app config
-app.config['LANGUAGES'] = {
-	"en": Language("en","English"),
-	"fr": Language("fr","Français"),
-	...
+app = Flask(__name__)
+
+# Initialize the Blueprint with a default configuration
+default_config = {
+    'example_key': 'example_value'
 }
-```
+blueprint = Blueprint('example_blueprint', __name__, default_config=default_config)
 
-*__init__(self, &ast;args, language_param='lg', default_language=None, default_language_picker=None, on_language_change=None, dictionnary_selector=None, &ast;&ast;kwargs)* : &ast;args and &ast;&ast;kwargs will be passed to the parent class Blueprint
-
-### Attributes
-- **language_param**: the language query parameter name ( default: 'lg'). Can be set in the constructor. Example: if the request recieved is "http://127.0.0.1:8080?lg=en", the blueprint will get the language associated with the str *en*
-- **default_language**: a string representing the default language (default: None)
-- **default_language_picker**: a callable object that takes no argument and returns the string representative of a language (en, fr, ...). It gets called if there is no language specified in the request query or in the current session. (default: returns the *default_language* attribute). Per example: If no language is specified in the request or the session, this function can be useful to pick the language from the current_user object.
-- **on_language_change**: A callable object that gets called when the language changes and takes a single parameter. A language change occurs when it is picked from the request query 
-- **dictionnary_selector**: A callable object that gets called when selecting a dictionnary. This is useful when using Objects as representatives for languages. Per example, using the class *Language* defined above, the proper *dictionnary_selector* would be *lambda x:x.code* 
-
-### Constants
-
-- **LANGUAGES_KEY**: the configuration name to use to get the languages dict from the app's or the blueprint's configuration (default: 'LANGUAGES')
-- **DICTIONNARY_KEY**: the configuration name to use to get the dictionnary from the app's or the blueprint's configuration (default: 'DICTIONNARY') 
-
-### Methods
-
-- **_get_str_language(self, return_language_only=True)**: Returns the string representing the language trying to pick from to the current request, then the session if it fails, if it fails again, it calls *default_language_picker()*. if *default_language_picker()* returns None, this methods tries last to pick the configuration "default_language" from either thje blueprint's or the app's config. if *return_language_only* is set to False, this method returns 3 values: the language, is_default (True if not found in request or session) and has_changed (if the language is picked from the request) otherwise, thos method just returns the language. This method doesn't fire the *on_language_change* callback.
-- **get_language(self)**: Returns the representative of the language with the same order of selection as the previous method. If the app's or the blueprint's configurations have no config name *'LANGUAGES'* (or whatever you set the constant *LANGUAGES_KEY* to) this function will return the string representative of the language. This method does fire the *on_language_change*
-- **get_dictionnary(self)**: Returns the dictionnary correspondant to the language returned by the method *get_language*
-
-### Decorators
-
-- **with_language** : Can be used to decorate a flask endpoint an loads automatically the language of the current caller using *get_language*. 
-- **with_dictionnary** : Can be used to decorate a flask endpoint an loads automatically the language and the correspondant dictionnary of the current caller using *get_dictionnary*. 
-
-### Example Of Usage:
-
-index.html
-```html
-<html>
-	<body>
-		{{dictionnary['string_1'].title()}}, {{dictionnary['string_2']}}: "{{language.name}}"
-	</body>
-</html>
-```
-
-The blueprint 
-
-```python
-class Language:
-	def __init__(self, code, name):
-		self.code = code
-		self.name = name
-
-blueprint = MultiLanguageBlueprint('test', __name__, dictionnary_selector=lambda lg:lg.code,default_config={
-	"LANGUAGES": [Language("en","English"),Language("fr","Français")],
-	"DICTIONNARY": {
-		"en": {"string_1":"hello", "string_2": "you've chosen"},
-		"fr": {"string_1":"salut", "string_2": "vous avez choisi"},
-	}
-	"default_language": "en", 
+# Setup additional configurations
+blueprint.setup({
+    'another_key': 'another_value'
 })
 
-@blueprint.route('/home')
-def home():
-	# Get the language of the page
-	language = blueprint.get_language()
-	# Get the dictionnary
-	dictionnary = blueprint.get_dictionnary()
+@app.route('/')
+def index():
+    # Access configuration
+    example_value = blueprint.get_configuration('example_key')
+    return f'Example Value: {example_value}'
 
-	return render_tempalte("index.html",dictionnary=dictionnary, language=language)
+app.register_blueprint(blueprint)
 ```
 
-After registering this blueprint to your app and running it (let say on http://127.0.0.1:5000) you'll have the following responses:
+### MultiLanguageBlueprint Class
 
-- GET 127.0.0.1:5000 returns 
-```
-<html>
-	<body>
-		Hello, you've chosen: "English"
-	</body>
-</html>
-```
+The `MultiLanguageBlueprint` class extends the `Blueprint` class to handle multi-language support.
 
-- GET 127.0.0.1:5000?lg=fr returns 
-```
-<html>
-	<body>
-		Bonjour, vous avez choisi: "Français"
-	</body>
-</html>
-```
+#### Parameters
 
-- Another GET call to 127.0.0.1:5000 (without the lg query parameter) returns 
-```
-<html>
-	<body>
-		Bonjour, vous avez choisi: "Français"
-	</body>
-</html>
-```
-This last call will not change back to english since the chosen language for your session has been set to "fr" on the previous one 
+- `language_param`: The parameter name to use for language in requests.
+- `default_language`: The default language if none is provided.
+- `default_language_picker`: A callable to determine the default language.
+- `on_language_change`: A callable to handle language change events.
+- `dictionnary_selector`: A callable to select the dictionary based on the language.
+- `load_in_g`: A flag to load the language and dictionary in Flask's global `g`.
 
+#### Example
 
-Using decorators: The same result can be achieved if the *home* route was defined as follows:
 ```python
-@blueprint.route('/home')
-@with_dictionnary
-def home(language, dictionnary):
-	return render_tempalte("index.html",dictionnary=dictionnary, language=language)
+from your_module import MultiLanguageBlueprint
+
+app = Flask(__name__)
+
+# Initialize the MultiLanguageBlueprint with configurations
+multi_lang_blueprint = MultiLanguageBlueprint('multi_lang_blueprint', __name__,
+                                              language_param='lang',
+                                              default_language='en',
+                                              on_language_change=lambda lang: print(f'Language changed to {lang}'),
+                                              dictionnary_selector=lambda lang: f'dict_{lang}')
+
+# Setup additional configurations
+multi_lang_blueprint.setup({
+    'LANGUAGES': {
+        'en': 'English',
+        'fr': 'French'
+    },
+    'DICTIONNARY': {
+        'dict_en': {'hello': 'Hello'},
+        'dict_fr': {'hello': 'Bonjour'}
+    }
+})
+
+@app.route('/')
+@multi_lang_blueprint.with_language
+def index(language):
+    return f'Current Language: {language}'
+
+@app.route('/greet')
+@multi_lang_blueprint.with_dictionnary
+def greet(language, dictionnary):
+    greeting = dictionnary.get('hello', 'Hi')
+    return f'Greeting: {greeting}'
+
+app.register_blueprint(multi_lang_blueprint)
 ```
 
+### Methods
+
+#### Blueprint
+
+- `default_config(configuration)`: Set the default configuration for the blueprint.
+- `setup(configuration)`: Setup the blueprint with the provided configuration, merging it with the default configuration.
+- `get_configuration(config, *args, fetch_from_app=True)`: Get the configuration value for the specified key.
+
+#### MultiLanguageBlueprint
+
+- `setup(configuration)`: Setup the blueprint with configuration settings.
+- `_get_str_language(return_language_only=True)`: Retrieve the current language setting.
+- `get_language()`: Get the current language, triggering change event if necessary.
+- `get_dictionnary(return_dictionnary_only=True)`: Get the dictionary for the current language.
+- `with_language(f)`: Decorator to inject the current language into the function.
+- `with_dictionnary(f)`: Decorator to inject the current language and dictionary into the function.
+
+## Error Handling
+
+The classes raise specific exceptions for configuration errors:
+
+- `CallbackException`: Raised when a required callback is not callable.
+- `WrongConfigurationFormat`: Raised when the configuration format is incorrect.
+- `ConfigNotFound`: Raised when a requested configuration key is not found.
+- `LanguageNotFound`: Raised when the default language is not properly set.
+
+## Contributing
+
+1. Fork the repository.
+2. Create your feature branch (`git checkout -b feature/fooBar`).
+3. Commit your changes (`git commit -am 'Add some fooBar'`).
+4. Push to the branch (`git push origin feature/fooBar`).
+5. Create a new Pull Request.
+
+## Acknowledgments
+
+- PyAxolotl: abdellatifzied.saada@gmail.com (Author)
+- Inspiration and ideas from the Flask community.

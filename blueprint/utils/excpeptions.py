@@ -1,0 +1,2 @@
+class NoStorageConfigurated(Exception):
+	pass
