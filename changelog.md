@@ -1,5 +1,15 @@
 # Change Log
 
+## Version 2.2.0
+
+### Additions
+
+- Added ApiRegister and ApiCaller object to add support for temod-open-api 
+
+### Authors
+
+- PyAxolotl
+
 ## Version 2.1.2
 
 ### Additions
