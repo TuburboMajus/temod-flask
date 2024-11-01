@@ -9,6 +9,7 @@ import json
 from .exceptions import *
 
 
+
 class Authenticator(LoginManager):
 	"""docstring for Authenticator"""
 	def __init__(self, loader=None, postload=None, login_view="login", **kwargs):
@@ -42,14 +43,16 @@ class Authenticator(LoginManager):
 			if loaded_user is None or self.postload is None:
 				return loaded_user
 			return self.postload(loaded_user)
+		return self
 
 	def setPostLoader(self,post_loader):
-		try:
-			assert(hasattr(post_loader,"__call__"))
-		except:
-			raise MalformedAuthenticatorError("The user post loader must be a callable object.")
-		self.postload = post_loader
-
+		if post_loader is not None:
+			try:
+				assert(hasattr(post_loader,"__call__"))
+			except:
+				raise MalformedAuthenticatorError("The user post loader must be a callable object.")
+			self.postload = post_loader
+		return self
 
 
 class AuthorizationBearerAuthenticator(Authenticator):
@@ -72,7 +75,43 @@ class AuthorizationBearerAuthenticator(Authenticator):
 		self.loader = loader
 		self._request_callback = load
 		self.unauthorized_callback = lambda :abort(403)
-		
+		return self
+
+
+class MultiAuthenticator(Authenticator):
+	"""docstring for MultiAuthenticator"""
+	def __init__(self, user_authenticator, request_authenticator, **kwargs):
+		super(MultiAuthenticator, self).__init__(**kwargs)
+		self.user_authenticator = user_authenticator.setLoader(self.loader).setPostLoader(self.postload)
+		self.request_authenticator = request_authenticator.setLoader(self.loader).setPostLoader(self.postload)
+
+	def login_user(self,authenticator, user, **kwargs):
+		return authenticator.login_user(user, **kwargs)
+
+	def logout_user(self,authenticator, user):
+		return authenticator.logout_user(user)
+
+	def setLoader(self, loader):
+		def load(request):
+			userID = self.user_authenticator._load_user()
+			loaded_user = self.user_authenticator._user_callback(userID)
+			print("load by user", userID, loaded_user)
+			if loaded_user is not None:
+				g.authenticator = self.user_authenticator
+			else:
+				loaded_user = self.request_authenticator._request_callback(request)
+				print("load by request", loaded_user)
+				if loaded_user is not None:
+					g.authenticator = self.request_authenticator
+			return loaded_user
+
+		self.loader = loader
+		self._request_callback = load
+	
+	def init_app(self, app):
+		self.user_authenticator.init_app(app)
+
+
 
 
 class OAuth2WebAuthenticator(Authenticator):

@@ -1,5 +1,20 @@
 # Change Log
 
+## Version 2.2.1
+
+### Additions
+
+- Added MultiAuthenticator: Authenticator allowing both session and token authentication 
+- Added Rest Endpoints: Abstract definition of rest endpoints
+
+### FIXES
+
+- Fixed a bug where MultiLanguageBlueprint failed to update language on change
+
+### Authors
+
+- PyAxolotl
+
 ## Version 2.2.0
 
 ### Additions

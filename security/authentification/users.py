@@ -87,7 +87,8 @@ class TemodUserHandler(object):
 		generated = self.token_generator()
 		temod_user[self.token_attr] = generated[self.token_attr]
 		temod_user[self.token_expiration_attr] = generated[self.token_expiration_attr]
-		return self.database(self.user_class,**self.db_credentials).updateOnSnapshot(temod_user.user)
+		self.database(self.user_class,**self.db_credentials).updateOnSnapshot(temod_user.user)
+		return generated
 
 
 

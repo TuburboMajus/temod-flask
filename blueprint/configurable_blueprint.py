@@ -100,7 +100,7 @@ class MultiLanguageBlueprint(Blueprint):
         super(MultiLanguageBlueprint, self).__init__(*args, **kwargs)
         self.language_param = language_param
         self.default_language = default_language
-        self.on_language_change = lambda x: x if on_language_change is None else on_language_change
+        self.on_language_change = (lambda x: x) if on_language_change is None else on_language_change
 
         # Ensure on_language_change is callable
         if not hasattr(self.on_language_change, '__call__'):

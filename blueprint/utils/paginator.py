@@ -25,6 +25,13 @@ class Pagination(object):
         self.current_page = current_page
         self.current = current
 
+    def to_dict(self):
+        return {
+            "current_page":self.current_page,
+            "total_pages": self.total_pages,
+            "data": [element.to_dict() for element in self.current]
+        }
+
 
 
 class Paginator(object):
