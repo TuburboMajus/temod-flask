@@ -1,5 +1,6 @@
 from temod_flask.blueprint.utils.exceptions import *
 from temod_flask.blueprint import Blueprint
+from temod.base.condition import Equals
 from temod.base import Entity
 
 from flask import request
@@ -25,12 +26,15 @@ class Pagination(object):
         self.current_page = current_page
         self.current = current
 
-    def to_dict(self):
-        return {
-            "current_page":self.current_page,
+    def to_dict(self, translator=None):
+        dct = {
             "total_pages": self.total_pages,
-            "data": [element.to_dict() for element in self.current]
+            "current_page": self.current_page,
+            "current": [element.to_dict() for element in self.current]
         }
+        if translator is not None:
+            return {translator.get(k,k):v for k,v in dct.items()}
+        return dct
 
 
 
@@ -59,6 +63,7 @@ class Paginator(object):
         self.storage = None
         self.filter = None
         self.listify = listify
+        self.default_filter = True
         self.count_total = count_total
 
     def for_entity(self, entity_type: Entity):
@@ -69,6 +74,7 @@ class Paginator(object):
         :return: Self for method chaining.
         """
         if hasattr(entity_type, "storage"):
+            self.entity_type = entity_type
             self.storage = entity_type.storage
         else:
             raise NoStorageConfigurated(f"No default storage has been set for entities of type {entity_type}. Use method 'from_storage'")
@@ -82,6 +88,16 @@ class Paginator(object):
         :return: Self for method chaining.
         """
         self.storage = storage
+        return self
+
+    def with_default_filter(self,activate: bool):
+        """
+        Set the filter function for the paginator.
+
+        :param function: The filter function.
+        :return: Self for method chaining.
+        """
+        self.default_filter = activate
         return self
 
     def with_filter(self, function):
@@ -103,6 +119,18 @@ class Paginator(object):
         """
         self.order = order
         return self
+
+    def __build_basic_conditions(self, args: dict):
+        conditions = []
+        if issubclass(self.entity_type, Entity):
+            for arg, value in args.items():
+                try:
+                    attribute = [attr for attr in self.entity_type.ATTRIBUTES if attr['name'] == arg][0]
+                    conditions.append(Equals(attribute['type'](arg,value=value)))
+                except:
+                    pass
+        return conditions
+
 
     def paginate(self, f):
         """
@@ -134,13 +162,18 @@ class Paginator(object):
 
             total_pages = None
             if self.filter is None:
-                elements = self.storage.list(limit=self.page_size,skip=(current_page-1)*self.page_size)
+                default_filters_ = []
+                if self.default_filter:
+                    default_filters_ = self.__build_basic_conditions(dict(request.args))
+                elements = self.storage.list(*default_filters_,limit=self.page_size,skip=(current_page-1)*self.page_size)
                 if self.count_total:
                     total_count = self.storage.count()
                     total_pages = math.ceil(total_count/self.page_size)
             else:
-                filter_ = self.filter(dict(request.args))
-                elements = self.storage.list(filter_,skip=(current_page-1)*self.page_size,limit=self.page_size)
+                filter_ = self.filter(dict(request.args)); default_filters_ = []
+                if self.default_filter:
+                    default_filters_ = self.__build_basic_conditions(dict(request.args))
+                elements = self.storage.list(*default_filters_,filter_,skip=(current_page-1)*self.page_size,limit=self.page_size)
                 if self.count_total:
                     total_count = self.storage.count(filter_)
                     total_pages = math.ceil(total_count/self.page_size)

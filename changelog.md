@@ -1,6 +1,21 @@
 # Change Log
 
+## Version 2.2.3
+
+### Authors
+
+- PyAxolotl
+
+### Additions
+
+- Paginator: Include support for default fitlers for paginators (filter based on the paginated entity's attributes)
+- Pagination: to_dict method
+
 ## Version 2.2.1
+
+### Authors
+
+- PyAxolotl
 
 ### Additions
 
