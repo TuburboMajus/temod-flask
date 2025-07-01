@@ -1,5 +1,15 @@
 # Change Log
 
+## Version 2.2.5
+
+### Authors
+
+- PyAxolotl
+
+### Additions
+
+- Content Writers: New feature to handler response formatting
+
 ## Version 2.2.4
 
 ### Authors
