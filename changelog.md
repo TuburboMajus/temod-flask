@@ -1,5 +1,16 @@
 # Change Log
 
+## Version 2.2.4
+
+### Authors
+
+- PyAxolotl
+
+### Additions
+
+- Paginator: Added support for paginating joins
+- Blueprint: can now define split routes
+
 ## Version 2.2.3
 
 ### Authors

@@ -1,5 +1,7 @@
-from flask import Blueprint as flaskBlueprint, current_app, request, session, g
+from flask import Blueprint as flaskBlueprint, Response, current_app, request, session, g
 from .exceptions import *
+
+import random, string
 
 
 class Blueprint(flaskBlueprint):
@@ -72,6 +74,27 @@ class Blueprint(flaskBlueprint):
                 if has_default:
                     return default
             raise ConfigNotFound(f"Neither the blueprint nor the app have the config: {config}")
+
+    def split_route(self,routes, *rargs, **rkwargs):
+
+        def __formatter(func):
+            def __fwrapper(route):
+                def route_function(*args,**kwargs):
+                    results = route(*args, **kwargs)
+                    if type(results) is Response:
+                        return results
+                    return func(*results)
+
+                route_function.__name__ = route.__name__+''.join(random.choices(string.ascii_letters + string.digits, k=10))
+                return route_function
+            return __fwrapper
+
+        def __wrapper(f):
+            for route, formatter in routes.items():
+                self.route(route,*rargs, **rkwargs)(__formatter(formatter)(f))
+                print(f"Route {route} has been registered")
+
+        return __wrapper
 
 
 

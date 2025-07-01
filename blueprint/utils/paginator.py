@@ -1,7 +1,7 @@
 from temod_flask.blueprint.utils.exceptions import *
 from temod_flask.blueprint import Blueprint
 from temod.base.condition import Equals
-from temod.base import Entity
+from temod.base import Entity, Join
 
 from flask import request
 
@@ -62,6 +62,7 @@ class Paginator(object):
         self.page_size = blueprint.get_configuration(page_size_config)
         self.storage = None
         self.filter = None
+        self.path_filter = None
         self.listify = listify
         self.default_filter = True
         self.count_total = count_total
@@ -110,6 +111,16 @@ class Paginator(object):
         self.filter = function
         return self
 
+    def with_path_filter(self, function):
+        """
+        Set the filter function for the paginator.
+
+        :param function: The filter function.
+        :return: Self for method chaining.
+        """
+        self.path_filter = function
+        return self
+
     def orderby(self, order):
         """
         Set the order of the paginated elements.
@@ -127,6 +138,25 @@ class Paginator(object):
                 try:
                     attribute = [attr for attr in self.entity_type.ATTRIBUTES if attr['name'] == arg][0]
                     conditions.append(Equals(attribute['type'](arg,value=value)))
+                except:
+                    pass
+        elif issubclass(self.entity_type, Join):
+            try:
+                entities = [self.entity_type.DEFAULT_ENTRY]
+                for constraint in self.entity_type.STRUCTURE:
+                    for entity in constraint.entities():
+                        if not(entity.ENTITY_NAME in [e.ENTITY_NAME for e in entities]):
+                            entities.append(entity)
+            except:
+                return []
+            for arg, value in args.items():
+                try:
+                    for entity in entities:
+                        try:
+                            attribute = [attr for attr in entity.ATTRIBUTES if attr['name'] == arg][0]
+                        except:
+                            continue
+                        conditions.append(Equals(attribute['type'](arg,value=value,owner_name=entity.ENTITY_NAME)))
                 except:
                     pass
         return conditions
@@ -161,22 +191,23 @@ class Paginator(object):
                 pass
 
             total_pages = None
-            if self.filter is None:
-                default_filters_ = []
-                if self.default_filter:
-                    default_filters_ = self.__build_basic_conditions(dict(request.args))
-                elements = self.storage.list(*default_filters_,limit=self.page_size,skip=(current_page-1)*self.page_size)
-                if self.count_total:
-                    total_count = self.storage.count()
-                    total_pages = math.ceil(total_count/self.page_size)
-            else:
-                filter_ = self.filter(dict(request.args)); default_filters_ = []
-                if self.default_filter:
-                    default_filters_ = self.__build_basic_conditions(dict(request.args))
-                elements = self.storage.list(*default_filters_,filter_,skip=(current_page-1)*self.page_size,limit=self.page_size)
-                if self.count_total:
-                    total_count = self.storage.count(filter_)
-                    total_pages = math.ceil(total_count/self.page_size)
+            filters = []; 
+            if self.filter is not None:
+                filters.append(self.filter(dict(request.args))); 
+            if self.path_filter is not None:
+                filters.append(self.path_filter(kwargs));
+            filters = [result for result in filters if result is not None] 
+            if self.default_filter:
+                default_filters_ = self.__build_basic_conditions(dict(request.args))
+            order = None
+            if hasattr(self, "order"):
+                order = self.order
+                if self.order is not None and hasattr(self.order,"__call__"):
+                    order = self.order(dict(request.args))
+            elements = self.storage.list(*default_filters_,*filters,skip=(current_page-1)*self.page_size,limit=self.page_size,orderby=order)
+            if self.count_total:
+                total_count = self.storage.count(*default_filters_,*filters)
+                total_pages = math.ceil(total_count/self.page_size)
 
 
             if self.listify:
